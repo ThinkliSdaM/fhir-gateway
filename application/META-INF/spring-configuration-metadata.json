@@ -1,0 +1,17 @@
+{
+  "groups": [
+    {
+      "name": "fhir.systems",
+      "type": "org.miracum.etl.fhirgateway.FhirSystemsConfig",
+      "sourceType": "org.miracum.etl.fhirgateway.FhirSystemsConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "fhir.systems.loinc",
+      "type": "java.lang.String",
+      "sourceType": "org.miracum.etl.fhirgateway.FhirSystemsConfig"
+    }
+  ],
+  "hints": []
+}

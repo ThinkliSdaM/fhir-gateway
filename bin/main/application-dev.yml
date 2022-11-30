@@ -1,0 +1,43 @@
+logging:
+  level:
+    org:
+      miracum: debug
+
+services:
+  loinc:
+    conversions:
+      url: "http://localhost:19090/api/v1"
+      enabled: true
+      failOnError: false
+  pseudonymizer:
+    enabled: true
+    url: "http://localhost:5000/fhir"
+  fhirServer:
+    url: "http://localhost:8082/fhir"
+    enabled: false
+  psql:
+    enabled: true
+  kafka:
+    enabled: true
+    generate-output-topic:
+      match-expression: "fhir\\."
+      replace-with: "fhir.post-gateway-pseuded-"
+
+opentracing:
+  jaeger:
+    probabilistic-sampler:
+      sampling-rate: 1
+    log-spans: true
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15432/fhir
+    username: postgres
+    password: postgres
+  kafka:
+    bootstrapServers: localhost:9092
+  cloud:
+    stream:
+      bindings:
+        process-in-0:
+          destination: ${INPUT_TOPIC:fhir.all,fhir.all-2}

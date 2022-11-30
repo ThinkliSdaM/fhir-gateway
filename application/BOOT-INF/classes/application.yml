@@ -1,0 +1,115 @@
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m %X %n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+  level:
+    org.springframework.cloud.stream.function: WARN
+
+spring:
+  profiles:
+    active: dev
+  datasource:
+    url: ""
+    username: ""
+    password: ""
+  application:
+    name: "fhir-gateway"
+  kafka:
+    bootstrapServers: ${BOOTSTRAP_SERVERS}
+    security.protocol: ${SECURITY_PROTOCOL:PLAINTEXT}
+    ssl:
+      trust-store-type: PKCS12
+      trust-store-location: file://${SSL_TRUST_STORE:/opt/kafka-certs/ca.p12}
+      trust-store-password: ${SSL_TRUST_STORE_PASSWORD}
+      key-store-type: PKCS12
+      key-store-location: file://${SSL_KEY_STORE_FILE:/opt/kafka-certs/user.p12}
+      key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    producer:
+      compression-type: gzip
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.miracum.kafka.serializers.KafkaFhirSerializer
+  cloud:
+    stream:
+      function.definition: process
+      bindings:
+        process-in-0:
+          consumer:
+            concurrency: ${CONSUMER_CONCURRENCY:1}
+          destination: ${INPUT_TOPIC:fhir.all}
+          group: ${GROUP_ID:fhir-gateway}
+          useNativeDecoding: true
+        process-out-0:
+          destination: ${OUTPUT_TOPIC:fhir.post-gateway}
+          producer:
+            useNativeEncoding: true
+      kafka:
+        bindings:
+          process-in-0:
+            consumer:
+              enableDlq: true
+              configuration:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: org.miracum.kafka.serializers.KafkaFhirDeserializer
+          process-out-0:
+            producer:
+              configuration:
+                compression.type: ${COMPRESSION_TYPE:gzip}
+          binder:
+            configuration:
+              max.poll.interval.ms: ${MAX_POLL_INTERVAL_MS:300000}
+              max.poll.records: ${MAX_POLL_RECORDS:500}
+  sql:
+    init:
+      schema-locations: classpath:/schema.sql
+      mode: always
+
+services:
+  loinc:
+    conversions:
+      url: ""
+      enabled: true
+      failOnError: false
+  pseudonymizer:
+    enabled: true
+    url: ""
+  fhirServer:
+    url: ""
+    enabled: false
+  psql:
+    enabled: true
+  kafka:
+    enabled: false
+    generate-output-topic:
+      match-expression: ""
+      replace-with: ""
+
+fhir:
+  systems:
+    loinc: "http://loinc.org"
+
+opentracing:
+  jaeger:
+    udp-sender:
+      host: localhost
+    log-spans: false
+
+app:
+  version: 0.0.0-dev
+
+features:
+  use-load-balancer-optimized-connection-pool: false
